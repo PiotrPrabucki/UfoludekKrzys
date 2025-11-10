@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Krzys Comm - frontend</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>KrzysOS - panel</h1>
+    <div class="container">
+        <div class="card vitals">
+            <h3>Parametry życiowe</h3>
+            <div id="vitals">
+                <div class="vital-row"><div>Energia</div><div id="v_energy">—</div></div>
+                <div class="vital-row"><div>Tętno</div><div id="v_heart">—</div></div>
+                <div class="vital-row"><div>Temperatura</div><div id="v_temp">—</div></div>
+                <div class="vital-row"><div>Nastrój</div><div id="v_mood">—</div></div>
+                <div class="status">Ostatnia aktualizacja: <span id="v_updated">—</span></div>
+            </div>
+            <div style="margin-top:10px">
+                <button id="refreshBtn" class="secondary">Odśwież</button>
+            </div>
+        </div>
+
+        <div class="card comm">
+            <h3>Komunikacja</h3>
+            <div class="history" id="history"></div>
+
+            <div style="margin-top:8px">
+                <label style="font-size:0.9rem">Wyślij jako:
+                    <select id="whoSelect" style="margin-left:6px">
+                        <option value="1">Użytkownik</option>
+                        <option value="0">Krzys</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="send">
+                <input id="msgInput" type="text" placeholder="Napisz wiadomość..." />
+                <button id="sendBtn">Wyślij</button>
+            </div>
+
+            <footer>
+                Podgląd historii komunikatów (ostatnie 100).
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000";
+        const historyEl = document.getElementById("history");
+        const v_energy = document.getElementById("v_energy");
+        const v_heart = document.getElementById("v_heart");
+        const v_temp = document.getElementById("v_temp");
+        const v_mood = document.getElementById("v_mood");
+        const v_updated = document.getElementById("v_updated");
+        const sendBtn = document.getElementById("sendBtn");
+        const msgInput = document.getElementById("msgInput");
+        const whoSelect = document.getElementById("whoSelect");
+        const refreshBtn = document.getElementById("refreshBtn");
+
+        let lastHistoryId = 0;
+
+        async function fetchState() {
+            try {
+                const r = await fetch(`${API_BASE}/state`);
+                if (!r.ok) throw r;
+                const data = await r.json();
+                v_energy.textContent = data.energy;
+                v_heart.textContent = data.heart_rate;
+                v_temp.textContent = data.temperature;
+                v_mood.textContent = data.mood;
+                v_updated.textContent = data.updated_at;
+            } catch (e) {
+                console.warn("fetchState error", e);
+            }
+        }
+
+        async function fetchHistory() {
+            try {
+                const r = await fetch(`${API_BASE}/history?limit=100&kind=comm`);
+                if (!r.ok) throw r;
+                const data = await r.json();
+                renderHistory(data.items || []);
+            } catch (e) {
+                console.warn("fetchHistory error", e);
+            }
+        }
+
+        function renderHistory(items) {
+            const list = items.slice().reverse();
+            historyEl.innerHTML = "";
+            for (const it of list) {
+                const who = it.who || "unknown";
+                const content = it.content && it.content.message ? it.content.message : JSON.stringify(it.content);
+                const ts = it.ts || "";
+                const div = document.createElement("div");
+                div.className = "msg " + (who === "user" ? "user" : "krzys");
+                const meta = document.createElement("div");
+                meta.className = "meta";
+                meta.textContent = `${who} • ${ts}`;
+                const body = document.createElement("div");
+                body.textContent = content;
+                div.appendChild(meta);
+                div.appendChild(body);
+                historyEl.appendChild(div);
+                if (it.id && it.id > lastHistoryId) lastHistoryId = it.id;
+            }
+            historyEl.scrollTop = historyEl.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+            const who = whoSelect.value; // "1" user, "0" krzys
+            sendBtn.disabled = true;
+            try {
+                const r = await fetch(`${API_BASE}/comm?who=${encodeURIComponent(who)}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text })
+                });
+                if (!r.ok) {
+                    const err = await r.text();
+                    console.error("send error", err);
+                    alert("Błąd wysyłania");
+                } else {
+                    msgInput.value = "";
+                    await fetchHistory();
+                    await fetchState();
+                }
+            } catch (e) {
+                console.error("send exception", e);
+                alert("Błąd sieci");
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        sendBtn.addEventListener("click", sendMessage);
+        msgInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+        refreshBtn.addEventListener("click", () => { fetchState(); fetchHistory(); });
+
+        setInterval(() => { fetchState(); fetchHistory(); }, 2000);
+
+        fetchState();
+        fetchHistory();
+    </script>
+</body>
+</html>

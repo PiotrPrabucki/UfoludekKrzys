@@ -1,0 +1,19 @@
+body { font-family: Arial, sans-serif; margin: 16px; background:#f7f7f8; color:#111 }
+h1 { margin: 0 0 12px 0 }
+.container { display:flex; gap:20px; flex-wrap:wrap }
+.card { background:#fff; border:1px solid #e0e0e0; padding:12px; border-radius:6px; box-shadow:0 1px 2px rgba(0,0,0,.03) }
+.vitals { width:320px }
+.vital-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #eee }
+.vital-row:last-child { border-bottom: none }
+.status { margin-top:8px; font-size:0.9rem; color:#666 }
+.comm { flex:1; min-width:320px; max-width:800px; display:flex; flex-direction:column; height:520px }
+.history { flex:1; overflow:auto; padding:8px; border:1px solid #eee; border-radius:4px; background:#fcfcfd }
+.msg { margin:6px 0; padding:8px; border-radius:8px; max-width:72% }
+.msg.user { background:#dbeafe; align-self:flex-end }
+.msg.krzys { background:#eef2ff; align-self:flex-start }
+.meta { font-size:0.8rem; color:#555; margin-bottom:4px }
+.send { display:flex; gap:8px; margin-top:8px }
+input[type="text"] { flex:1; padding:8px; border:1px solid #ddd; border-radius:6px }
+button { padding:8px 12px; border:0; background:#2563eb; color:#fff; border-radius:6px; cursor:pointer }
+button.secondary { background:#6b7280 }
+footer { margin-top:12px; font-size:0.9rem; color:#666 }
